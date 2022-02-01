@@ -4,9 +4,13 @@ import java.util.Date;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import br.com.srpp.cursosb.domain.Cliente;
 import br.com.srpp.cursosb.domain.ItemPedido;
 import br.com.srpp.cursosb.domain.PagamentoComBoleto;
 import br.com.srpp.cursosb.domain.Pedido;
@@ -14,6 +18,8 @@ import br.com.srpp.cursosb.domain.enums.EstadoPagamento;
 import br.com.srpp.cursosb.repositories.ItemPedidoRepository;
 import br.com.srpp.cursosb.repositories.PagamentoRepository;
 import br.com.srpp.cursosb.repositories.PedidoRepository;
+import br.com.srpp.cursosb.security.UserSS;
+import br.com.srpp.cursosb.services.exceptions.AuthorizationException;
 import br.com.srpp.cursosb.services.exceptions.ObjectNotFoundException;
 
 @Service
@@ -23,16 +29,22 @@ public class PedidoService {
 	private PedidoRepository repo;
 	
 	@Autowired
-	BoletoService boletoService;
+	private BoletoService boletoService;
 	
 	@Autowired
-	ProdutoService produtoService;
+	private ProdutoService produtoService;
 	
 	@Autowired
-	PagamentoRepository pagamentoRepository;
+	private ClienteService clienteService;
 	
 	@Autowired
-	ItemPedidoRepository itemPedidoRepository;
+	private PagamentoRepository pagamentoRepository;
+	
+	@Autowired
+	private ItemPedidoRepository itemPedidoRepository;
+	
+	@Autowired
+	EmailService emailService;
 	
 	public Pedido find(Integer id) {
 		Optional<Pedido> obj = repo.findById(id);
@@ -44,6 +56,7 @@ public class PedidoService {
 	public Pedido insert(Pedido obj) {
 		obj.setId(null);
 		obj.setInstante(new Date());
+		obj.setCliente(clienteService.find(obj.getCliente().getId()));
 		obj.getPagamento().setEstado(EstadoPagamento.PENDENTE);
 		obj.getPagamento().setPedido(obj);
 		if(obj.getPagamento() instanceof PagamentoComBoleto) {
@@ -54,10 +67,22 @@ public class PedidoService {
 		pagamentoRepository.save(obj.getPagamento());
 		for (ItemPedido ip: obj.getItens()) {
 			ip.setDesconto(0.0);
-			ip.setPreco(produtoService.find(ip.getProduto().getId()).getPreco());
+			ip.setProduto(produtoService.find(ip.getProduto().getId()));
+			ip.setPreco(ip.getProduto().getPreco());
 			ip.setPedido(obj);
 		}
 		itemPedidoRepository.saveAll(obj.getItens());
+		emailService.sendOrderConfirmationHtmlEmail(obj);
 		return obj;
 	}
+	
+	public Page<Pedido> findPage(Integer page, Integer linesPerPage, String orderBy, String direction) {
+		UserSS user = UserService.authenticated();
+		if (user == null) {
+			throw new AuthorizationException("Acesso negado!");
+		}
+		PageRequest pageRequest = PageRequest.of(page, linesPerPage, Direction.valueOf(direction), orderBy);
+		Cliente cliente = clienteService.find(user.getId());
+		return repo.findByCliente(cliente, pageRequest);
+	}	
 }
