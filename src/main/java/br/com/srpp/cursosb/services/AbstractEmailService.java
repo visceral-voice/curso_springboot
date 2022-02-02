@@ -7,6 +7,7 @@ import javax.mail.internet.MimeMessage;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -16,6 +17,7 @@ import org.thymeleaf.context.Context;
 import br.com.srpp.cursosb.domain.Cliente;
 import br.com.srpp.cursosb.domain.Pedido;
 
+@Configuration
 public abstract class AbstractEmailService implements EmailService {
 	
 	@Value("${default.sender}")
