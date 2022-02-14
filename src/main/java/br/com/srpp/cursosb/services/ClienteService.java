@@ -58,8 +58,8 @@ public class ClienteService {
 	public Cliente find(Integer id) {
 
 		UserSS user = UserService.authenticated();
-		if (user == null || !user.hasRole(Perfil.ADMIN) || !id.equals(user.getId())) {
-			// if (user == null || !id.equals(user.getId())) {
+		//if (user == null || !user.hasRole(Perfil.ADMIN) || !id.equals(user.getId())) {
+		 if (user == null || !id.equals(user.getId())) {
 			throw new AuthorizationException("Acesso negado!");
 		}
 
@@ -99,8 +99,8 @@ public class ClienteService {
 	public Cliente findByEmail(String email) {
 		
 		UserSS user = UserService.authenticated();
-		if (user == null || !user.hasRole(Perfil.ADMIN) || !email.equals(user.getUsername())) {
-			// if (user == null || !email.equals(user.getUsername())) {
+		//if (user == null || !user.hasRole(Perfil.ADMIN) || !email.equals(user.getUsername())) {
+		 if (user == null || !email.equals(user.getUsername())) {
 			throw new AuthorizationException("Acesso negado!");
 		}
 		
